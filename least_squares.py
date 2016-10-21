@@ -27,7 +27,7 @@ data = array
 
 
 #sets up some x coordinates so we can plot our trend line
-x_sample = np.arange(data[0][0]-5, data[len(data)-1][0]+5, .5)
+x_sample = np.arange(data[0][0]-5, data[len(data)-1][0]+5, .2)
 
 
 ###################################
@@ -79,7 +79,7 @@ def find_coefficients(approximation_order):
 	X = linalg.solve(A,B)
 	return X
 
-def print_equation():
+def print_equation(X):
 	equation = ""
 	for num in range(0, len(X)):
 		equation += str(round(X.item(num,0), 4))+"x^"+str(num)
@@ -113,7 +113,7 @@ while True:
 	plt.plot(polynomial_x, polynomial_y, 'r-')
 	plt.show()
 
-	print_equation()
+	print_equation(X)
 	if(end()):
 		break
 
