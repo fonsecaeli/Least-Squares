@@ -1,44 +1,20 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.linalg import inv
 from numpy import linalg
-
-#reading in data from text file
-##ask what the actuall formate for the files will be
-fileName = str(input("Enter the name of the file with the data: "))
-
-#could use some error checking, but i dont feel like doing this
-with open(fileName, "r") as ins:
-	array = []
-	for line in ins:
-		temp = line.rstrip('\n').split("\t")
-		point = (float(temp[0]), float(temp[1]))
-		array.append(point)
-
-data = array
-######
-
-#data = [(0.0, 0.1), (1.0, 0.9), (2.0, 2.2), (3.0, 2.8), (4.0, 3.9), (5.0, 5.1)]  #linear data set
-#data= [(10,	115.6),(15,157.2),(20,189.2),(24,220.8),(30,253.8),(34,269.2),(40,284.8),(45,285.0),(48,277.4),(50,269.2),(58,244.2),(60,231.),(64,180.4)] #quadratic data set
-#data= [(0,-250),(10,0),(20,50),(30,-100)]
-#data=[(0,0), (10,102.6903), (20,105.4529), (30,81.21744), (40,55.6016), (50,35.6859)]
+import math
+from operator import itemgetter
+from pathlib import Path
 
 
-
-
-#sets up some x coordinates so we can plot our trend line
-x_sample = np.arange(data[0][0]-5, data[len(data)-1][0]+5, .2)
-
-
-###################################
-#general approch, works for any order polynomial approximation
-#gives results in slightly different forms than the above code
-#
-
-def x_sum(power):
+#general approch for least squares, works for any order polynomial approximation
+#following functions are all untility function, nothing actually happens here
+def coord_sum(coord, power):
+	if(coord != 0 and coord != 1):
+		print("Error")
+		return 0
 	sum = 0
 	for point in data:
-		x = point[0]
+		x = point[coord]
 		sum += x**power
 	return sum
 
@@ -63,21 +39,23 @@ def find_coefficients(approximation_order):
 		row_matrix = [];
 		for col in range(0, approximation_order+1):
 			power = row+col
-			row_matrix.append(x_sum(power))
+			row_matrix.append(coord_sum(0, power))
 		matrix.append(row_matrix)
-
 	A = np.matrix(matrix)
-
 	#sets up our B matrix
 	matrix = []
 	for power in range(0, approximation_order+1):
 		row_entry = [yx_sum(power)]
 		matrix.append(row_entry)
-
 	B = np.matrix(matrix)
 	#solves our linear system
 	X = linalg.solve(A,B)
 	return X
+
+def calcualte_R():
+	den = len(data)*yx_sum(1)-coord_sum(0,1)*coord_sum(1,1)
+	num = math.sqrt(len(data)*coord_sum(0,2)-coord_sum(0,1)**2)*math.sqrt(len(data)*coord_sum(1,2)-coord_sum(1,1)**2)
+	return den/num
 
 def print_equation(X):
 	equation = ""
@@ -86,39 +64,50 @@ def print_equation(X):
 		if(num != len(X)-1):
 			equation += " + "
 	#prints out our polynomial equation
-	print(equation)
+	print("\nEquation:\n"+equation)
+	print("\nR => "+str(calcualte_R()))
+	r_squared = calcualte_R()**2
+	print("R^2 =>"+str(r_squared))
 
 def end():
-	answer = str(input("would you to try again?"))
-	if(answer == "y"):
-		return False 
+	answer = str(input("would you like to try again? "))
+	if(answer[0] == "y"):
+		return False
 	return True
 
+#this is where the program actually starts
 while True:
-	approximation_order = int(input("Enter the oder of the requested polynomial approximation: "))
+	#Reads in data from a text file, must be tab delimited
+	fileName = str(input("Enter the name of the file with the data: "))
+	while True:
+		if(Path(fileName).is_file()):
+			break
+		else:
+			fileName = str(input("File does not exist, please try again: "))
+	data = np.loadtxt(fileName, 'float', delimiter="\t")
+	#sets up some x coordinates so we can plot our trend line
+	x_sample = np.arange(min(data, key=itemgetter(0))[0]-1, max(data, key=itemgetter(0))[0]+1, .1)
+	approximation_order = (input("Enter the oder of the requested polynomial approximation: "))
+	while True:
+		try:
+			int(approximation_order)
+		except ValueError:
+		    approximation_order = input("please enter a number: ")
+		else:
+			approximation_order = int(approximation_order)
+			break
 	X = find_coefficients(approximation_order)
-
+	print_equation(X)
 	polynomial_x = x_sample
 	polynomial_y = []
-
 	#graphs the polynoial of best fit
 	for x in polynomial_x:
 		polynomial_y.append(polynomial_approx(X,x))
-
-
 	#plots the original data points
 	for point in data:
 	 	plt.plot([point[0]], [point[1]], 'g^')
-
 	plt.plot(polynomial_x, polynomial_y, 'r-')
+	#plt.ylim((min(data, key=itemgetter(1))[1]), (max(data, key=itemgetter(1))[1]))
 	plt.show()
-
-	print_equation(X)
 	if(end()):
 		break
-
-
-
-
-
- 
