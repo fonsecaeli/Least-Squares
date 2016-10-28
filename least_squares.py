@@ -4,7 +4,7 @@ from numpy import linalg
 import math
 from operator import itemgetter
 from pathlib import Path
-
+import timeit
 
 #general approch for least squares, works for any order polynomial approximation
 #following functions are all untility function, nothing actually happens here
@@ -57,17 +57,26 @@ def calcualte_R():
 	num = math.sqrt(len(data)*coord_sum(0,2)-coord_sum(0,1)**2)*math.sqrt(len(data)*coord_sum(1,2)-coord_sum(1,1)**2)
 	return den/num
 
+def calculate_Rsquared():
+	y_average = coord_sum(1,1)/len(data)
+	res = 0
+	tot = 0
+	for x in data:
+		res += (x[1]-polynomial_approx(X, x[0]))**2
+		tot += (x[1]-y_average)**2
+	return 1-res/tot
+
+
 def print_equation(X):
 	equation = ""
 	for num in range(0, len(X)):
-		equation += str(round(X.item(num,0), 4))+"x^"+str(num)
-		if(num != len(X)-1):
-			equation += " + "
+		equation += str("x^"+str(num)+" coefficient => ["+ str(round(X.item(num,0), 4))+"]\n")
 	#prints out our polynomial equation
 	print("\nEquation:\n"+equation)
-	print("\nR => "+str(calcualte_R()))
-	r_squared = calcualte_R()**2
-	print("R^2 =>"+str(r_squared))
+	if(len(X) == 2):
+		print("\nR => "+str(calcualte_R()))
+	else:
+		print("R^2 =>"+str(calculate_Rsquared()))
 
 def end():
 	answer = str(input("would you like to try again? "))
@@ -75,7 +84,7 @@ def end():
 		return False
 	return True
 
-#this is where the program actually starts
+#this is where the program actually starts, where we use all of the functions we have created
 while True:
 	#Reads in data from a text file, must be tab delimited
 	fileName = str(input("Enter the name of the file with the data: "))
@@ -86,8 +95,8 @@ while True:
 			fileName = str(input("File does not exist, please try again: "))
 	data = np.loadtxt(fileName, 'float', delimiter="\t")
 	#sets up some x coordinates so we can plot our trend line
-	x_sample = np.arange(min(data, key=itemgetter(0))[0]-1, max(data, key=itemgetter(0))[0]+1, .1)
-	approximation_order = (input("Enter the oder of the requested polynomial approximation: "))
+	x_sample = np.arange(min(data, key=itemgetter(0))[0]-1, max(data, key=itemgetter(0))[0]+1, .01)
+	approximation_order = (input("Enter the order of the requested polynomial fit: "))
 	while True:
 		try:
 			int(approximation_order)
@@ -96,7 +105,11 @@ while True:
 		else:
 			approximation_order = int(approximation_order)
 			break
+	starttime = timeit.timeit()
 	X = find_coefficients(approximation_order)
+	endtime = timeit.timeit()
+	time  = endtime - starttime
+	print("Run Time: " + str(time))
 	print_equation(X)
 	polynomial_x = x_sample
 	polynomial_y = []
@@ -107,7 +120,7 @@ while True:
 	for point in data:
 	 	plt.plot([point[0]], [point[1]], 'g^')
 	plt.plot(polynomial_x, polynomial_y, 'r-')
-	#plt.ylim((min(data, key=itemgetter(1))[1]), (max(data, key=itemgetter(1))[1]))
+	plt.ylim((min(data, key=itemgetter(1))[1]), (max(data, key=itemgetter(1))[1]))
 	plt.show()
 	if(end()):
 		break
